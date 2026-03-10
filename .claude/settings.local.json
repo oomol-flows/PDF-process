@@ -33,7 +33,12 @@
       "Bash(apt-cache show:*)",
       "Bash(dpkg -L:*)",
       "mcp__oomol__runFlow",
-      "Bash(pdftotext:*)"
+      "Bash(pdftotext:*)",
+      "Bash",
+      "Read",
+      "Write",
+      "WebFetch",
+      "mcp__oomol"
     ],
     "deny": [],
     "ask": []

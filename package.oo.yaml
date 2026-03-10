@@ -5,10 +5,12 @@ scripts:
     poetry install --no-root
     sudo apt-get update
     sudo apt-get -y install poppler-utils
+    # WeasyPrint dependencies for md-to-pdf
+    sudo apt-get -y install libpango-1.0-0 libpangocairo-1.0-0 libglib2.0-0 libffi-dev shared-mime-info
 dependencies:
   {}
 name: pdf
-version: 0.2.1
+version: 0.2.3
 displayName: "%display-name%"
 description: "%key%"
 repository: https://github.com/oomol-flows/PDF
