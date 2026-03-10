@@ -1,19 +1,20 @@
 inputs_def:
   - handle: md_content
+    description: Markdown content to convert
     json_schema:
       type: string
       ui:widget: text
-    description: "%markdown-content-to-convert%"
     nullable: false
 
   - handle: title
+    description: Document title
     json_schema:
       type: string
-    description: "%document-title-optional%"
-    value: ""
+    value:
     nullable: true
 
   - handle: font_size
+    description: Base font size
     json_schema:
       type: number
       enum:
@@ -24,36 +25,16 @@ inputs_def:
         - 16
       ui:options:
         labels:
-          - "10pt (Small)"
-          - "11pt (Normal)"
-          - "12pt (Large)"
-          - "14pt (Extra Large)"
-          - "16pt (Huge)"
+          - 10pt (Small)
+          - 11pt (Normal)
+          - 12pt (Large)
+          - 14pt (Extra Large)
+          - 16pt (Huge)
     value: 11
-    description: "%base-font-size%"
-    nullable: false
-
-  - handle: color_scheme
-    json_schema:
-      type: string
-      enum:
-        - elegant_blue
-        - warm_earth
-        - modern_dark
-        - classic_serif
-        - minimal_gray
-      ui:options:
-        labels:
-          - "Elegant Blue"
-          - "Warm Earth"
-          - "Modern Dark"
-          - "Classic Serif"
-          - "Minimal Gray"
-    value: elegant_blue
-    description: "%color-scheme-for-document%"
     nullable: false
 
   - handle: output_path
+    description: Output PDF file path (optional, uses session dir if not set)
     json_schema:
       type: string
       ui:widget: save
@@ -65,13 +46,12 @@ inputs_def:
         excludeAll: true
     value:
     nullable: true
-    description: "%output-pdf-file-path-optional%"
 
 outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "%generated-pdf-file-path%"
+    description: "Generated PDF file path"
     nullable: false
 
 executor:
@@ -79,6 +59,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "%md-to-pdf%"
+title: "Markdown to PDF"
 icon: ":carbon:document-pdf:"
-description: "%convert-markdown-to-beautifully-styled-pdf%"
+description: "Convert Markdown to PDF using WeasyPrint with OTF font support"

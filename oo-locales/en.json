@@ -156,7 +156,12 @@
   "test-flow-for-html-to-pdf-conversion": "Test flow for HTML to PDF conversion",
   "test-markdown-to-pdf": "Test Markdown to PDF",
   "test-the-md-to-pdf-task-block": "Test the md-to-pdf task block",
-  "test-text-to-pdf": "Test Text to PDF",
-  "test-the-text-to-pdf-task-block": "Test the text-to-pdf task block",
-  "directory-containing-converted-image-files": "Directory containing converted image files"
+  "directory-containing-converted-image-files": "Directory containing converted image files",
+  "md-to-pdf2": "Test md-to-pdf",
+  "test-three-pdf-blocks": "Test Three PDF Blocks",
+  "test-md-to-pdf-text-to-pdf-and-html-to-pdf-blocks": "Test md-to-pdf, text-to-pdf, and html-to-pdf blocks",
+  "markdown-test": "Markdown Test",
+  "text-test": "Text Test",
+  "html-test": "HTML Test",
+  "html-to-pdf2": "Test html-to-pdf"
 }

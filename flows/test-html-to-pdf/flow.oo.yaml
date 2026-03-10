@@ -1,31 +1,23 @@
-title: "%test-html-to-pdf%"
-description: "%test-flow-for-html-to-pdf-conversion%"
+title: "%html-to-pdf2%"
 nodes:
   - node_id: html_to_pdf#1
     task: self::html-to-pdf
     inputs_from:
       - handle: html_content
         value: |
-          <h1>Hello World</h1>
-          <p>This is a <strong>test</strong> HTML document.</p>
+          <h1>欢迎使用 OOMOL PDF 生成器</h1>
+          <p>这是一个格式精美的 PDF 文档，支持中文字体渲染。</p>
+          <h2>功能特点</h2>
           <ul>
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
+            <li>多种配色方案</li>
+            <li>清晰的排版</li>
+            <li>专业的布局</li>
+            <li>完美支持中文</li>
           </ul>
-          <table>
-            <tr><th>Name</th><th>Value</th></tr>
-            <tr><td>Alice</td><td>100</td></tr>
-            <tr><td>Bob</td><td>200</td></tr>
-          </table>
-          <blockquote>
-            This is a quote block.
-          </blockquote>
-          <pre><code>function hello() {
-            console.log("Hello!");
-          }</code></pre>
+          <blockquote>好的设计显而易见，伟大的设计透明无痕。</blockquote>
+          <p>This document demonstrates Chinese font support using Source Han Sans SC.</p>
       - handle: title
-        value: "Test Document"
+        value: "中文 PDF 测试"
       - handle: output_path
         value:
         nullable: true

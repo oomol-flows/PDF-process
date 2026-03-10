@@ -4,464 +4,396 @@ class Inputs(typing.TypedDict):
     md_content: str
     title: str | None
     font_size: typing.Literal[10, 11, 12, 14, 16]
-    color_scheme: typing.Literal["elegant_blue", "warm_earth", "modern_dark", "classic_serif", "minimal_gray"]
     output_path: str | None
 class Outputs(typing.TypedDict):
     pdf_path: typing.NotRequired[str]
 #endregion
 
 from oocana import Context
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor, Color
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, PageBreak,
-    ListFlowable, ListItem
-)
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 import markdown
-from xml.etree import ElementTree
 import os
-import re
 
 # Color schemes with design sense
 COLOR_SCHEMES = {
     "elegant_blue": {
-        "primary": "#1a365d",      # Deep blue
-        "secondary": "#2c5282",    # Medium blue
-        "accent": "#3182ce",       # Bright blue
-        "text": "#1a202c",         # Dark gray
-        "light_bg": "#ebf8ff",     # Light blue bg
-        "code_bg": "#f7fafc",      # Code background
-        "border": "#bee3f8",       # Border color
+        "primary": "#1a365d",
+        "secondary": "#2c5282",
+        "accent": "#3182ce",
+        "text": "#1a202c",
+        "light_bg": "#ebf8ff",
+        "code_bg": "#f7fafc",
+        "border": "#bee3f8",
+        "background": "#ffffff",
     },
     "warm_earth": {
-        "primary": "#744210",      # Brown
-        "secondary": "#975a16",    # Dark gold
-        "accent": "#d69e2e",       # Gold
-        "text": "#1a202c",         # Dark gray
-        "light_bg": "#fffaf0",     # Warm white
-        "code_bg": "#fef3c7",      # Light amber
-        "border": "#f6e05e",       # Yellow border
+        "primary": "#744210",
+        "secondary": "#975a16",
+        "accent": "#d69e2e",
+        "text": "#1a202c",
+        "light_bg": "#fffaf0",
+        "code_bg": "#fef3c7",
+        "border": "#f6e05e",
+        "background": "#fffaf0",
     },
     "modern_dark": {
-        "primary": "#e2e8f0",      # Light gray
-        "secondary": "#a0aec0",    # Medium gray
-        "accent": "#63b3ed",       # Blue accent
-        "text": "#e2e8f0",         # Light text
-        "light_bg": "#2d3748",     # Dark bg
-        "code_bg": "#1a202c",      # Darker code bg
-        "border": "#4a5568",       # Border
+        "primary": "#e2e8f0",
+        "secondary": "#a0aec0",
+        "accent": "#63b3ed",
+        "text": "#e2e8f0",
+        "light_bg": "#2d3748",
+        "code_bg": "#1a202c",
+        "border": "#4a5568",
+        "background": "#1a202c",
     },
     "classic_serif": {
-        "primary": "#2d3748",      # Dark slate
-        "secondary": "#4a5568",    # Slate
-        "accent": "#718096",       # Gray
-        "text": "#1a202c",         # Near black
-        "light_bg": "#f7f7f7",     # Off white
-        "code_bg": "#f0f0f0",      # Light gray
-        "border": "#cbd5e0",       # Light border
+        "primary": "#2d3748",
+        "secondary": "#4a5568",
+        "accent": "#718096",
+        "text": "#1a202c",
+        "light_bg": "#f7f7f7",
+        "code_bg": "#f0f0f0",
+        "border": "#cbd5e0",
+        "background": "#ffffff",
     },
     "minimal_gray": {
-        "primary": "#1a202c",      # Dark
-        "secondary": "#4a5568",    # Medium
-        "accent": "#718096",       # Light accent
-        "text": "#2d3748",         # Text
-        "light_bg": "#ffffff",     # White
-        "code_bg": "#f7fafc",      # Near white
-        "border": "#e2e8f0",       # Very light
+        "primary": "#1a202c",
+        "secondary": "#4a5568",
+        "accent": "#718096",
+        "text": "#2d3748",
+        "light_bg": "#ffffff",
+        "code_bg": "#f7fafc",
+        "border": "#e2e8f0",
+        "background": "#ffffff",
     },
 }
 
 
-def register_fonts():
-    """Register Chinese fonts for PDF generation"""
-    font_paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-    ]
+def get_font_path() -> str:
+    """Get the best available Chinese font path."""
+    # Prefer OTF font (WeasyPrint supports OTF natively)
+    otf_path = "/usr/share/fonts/SourceHanSans/SourceHanSansSC-Normal.otf"
+    ttf_path = "/usr/share/fonts/NotoSansSC/NotoSansSC-Regular.ttf"
     
-    try:
-        pdfmetrics.registerFont(TTFont('DejaVuSans', font_paths[0]))
-        pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', font_paths[1]))
-        pdfmetrics.registerFont(TTFont('DejaVuSansMono', font_paths[2]))
-        return True
-    except Exception:
-        return False
+    if os.path.exists(otf_path):
+        return otf_path
+    elif os.path.exists(ttf_path):
+        return ttf_path
+    else:
+        raise FileNotFoundError("No Chinese font found")
 
 
-def create_styles(color_scheme: str, base_font_size: int) -> dict:
-    """Create custom paragraph styles based on color scheme"""
+def generate_css(color_scheme: str, font_size: int, font_path: str) -> str:
+    """Generate CSS styles based on color scheme."""
     colors = COLOR_SCHEMES.get(color_scheme, COLOR_SCHEMES["elegant_blue"])
     
-    styles = getSampleStyleSheet()
-    custom_styles = {}
+    return f"""
+    @font-face {{
+        font-family: 'SourceHanSans';
+        src: url('{font_path}');
+        font-weight: normal;
+        font-style: normal;
+    }}
     
-    # Base font name
-    font_name = "DejaVuSans" if register_fonts() else "Helvetica"
-    font_bold = "DejaVuSans-Bold" if register_fonts() else "Helvetica-Bold"
-    font_mono = "DejaVuSansMono" if register_fonts() else "Courier"
+    @page {{
+        margin: 2cm;
+        size: A4;
+        @top-center {{
+            content: attr(data-title);
+            font-size: 9pt;
+            color: {colors['secondary']};
+        }}
+        @bottom-center {{
+            content: counter(page);
+            font-size: 9pt;
+            color: {colors['secondary']};
+        }}
+    }}
     
-    # Title style
-    custom_styles['title'] = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Title'],
-        fontName=font_bold,
-        fontSize=base_font_size * 2,
-        textColor=HexColor(colors['primary']),
-        spaceAfter=20 * mm,
-        alignment=TA_CENTER,
-    )
+    * {{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }}
     
-    # Heading styles
-    for i in range(1, 7):
-        size_factor = 2.2 - (i - 1) * 0.25
-        custom_styles[f'heading{i}'] = ParagraphStyle(
-            f'CustomHeading{i}',
-            parent=styles[f'Heading{i}'],
-            fontName=font_bold,
-            fontSize=int(base_font_size * size_factor),
-            textColor=HexColor(colors['primary']),
-            spaceBefore=12 * mm if i <= 2 else 8 * mm,
-            spaceAfter=4 * mm,
-            borderPadding=2 * mm,
-        )
+    body {{
+        font-family: 'SourceHanSans', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif;
+        font-size: {font_size}pt;
+        line-height: 1.6;
+        color: {colors['text']};
+        background-color: {colors['background']};
+    }}
     
-    # Body text
-    custom_styles['body'] = ParagraphStyle(
-        'CustomBody',
-        parent=styles['Normal'],
-        fontName=font_name,
-        fontSize=base_font_size,
-        textColor=HexColor(colors['text']),
-        leading=base_font_size * 1.6,
-        alignment=TA_JUSTIFY,
-        spaceBefore=2 * mm,
-        spaceAfter=4 * mm,
-    )
+    h1 {{
+        font-size: {font_size * 2}pt;
+        color: {colors['primary']};
+        margin-top: 0.8em;
+        margin-bottom: 0.4em;
+        padding-bottom: 0.2em;
+        border-bottom: 2px solid {colors['accent']};
+        page-break-after: avoid;
+    }}
     
-    # Code style - for syntax highlighted code blocks
-    # NOTE: backColor prevents <font color> from working, so we use borderPadding for visual separation
-    custom_styles['code'] = ParagraphStyle(
-        'CustomCode',
-        parent=styles['Code'],
-        fontName=font_mono,
-        fontSize=base_font_size * 0.85,
-        textColor=HexColor('#2d3748'),  # Dark gray for default text
-        backColor=None,  # MUST be None to allow <font color> tags to work
-        borderColor=HexColor('#e2e8f0'),
-        borderWidth=1,
-        borderPadding=12,
-        spaceBefore=4 * mm,
-        spaceAfter=4 * mm,
-        leftIndent=4 * mm,
-        rightIndent=4 * mm,
-        leading=base_font_size * 1.5,
-        allowWidows=0,
-        allowOrphans=0,
-    )
+    h2 {{
+        font-size: {int(font_size * 1.6)}pt;
+        color: {colors['primary']};
+        margin-top: 0.8em;
+        margin-bottom: 0.3em;
+        page-break-after: avoid;
+    }}
     
-    # Inline code style
-    custom_styles['inline_code'] = ParagraphStyle(
-        'InlineCode',
-        parent=styles['Normal'],
-        fontName=font_mono,
-        fontSize=base_font_size * 0.9,
-        textColor=HexColor(colors['accent']),
-        backColor=HexColor(colors['code_bg']),
-        borderPadding=2,
-    )
+    h3 {{
+        font-size: {int(font_size * 1.3)}pt;
+        color: {colors['secondary']};
+        margin-top: 0.6em;
+        margin-bottom: 0.2em;
+        page-break-after: avoid;
+    }}
     
-    # Blockquote style
-    custom_styles['blockquote'] = ParagraphStyle(
-        'CustomBlockquote',
-        parent=styles['Normal'],
-        fontName=font_name,
-        fontSize=base_font_size,
-        textColor=HexColor(colors['secondary']),
-        leftIndent=10 * mm,
-        rightIndent=10 * mm,
-        spaceBefore=4 * mm,
-        spaceAfter=4 * mm,
-        borderPadding=4 * mm,
-        borderColor=HexColor(colors['accent']),
-        borderWidth=2,
-        borderRadius=2,
-    )
+    h4, h5, h6 {{
+        font-size: {font_size}pt;
+        color: {colors['secondary']};
+        margin-top: 0.5em;
+        margin-bottom: 0.2em;
+        page-break-after: avoid;
+    }}
     
-    # Link style
-    custom_styles['link'] = ParagraphStyle(
-        'CustomLink',
-        parent=styles['Normal'],
-        fontName=font_name,
-        fontSize=base_font_size,
-        textColor=HexColor(colors['accent']),
-        underline=True,
-    )
+    p {{
+        margin: 0.5em 0;
+        text-align: justify;
+    }}
     
-    return custom_styles
-
-
-def highlight_code(code: str) -> str:
-    """Format code for PDF display
-
-    Note: Reportlab's Paragraph class has limited support for inline color formatting.
-    This function formats code with proper escaping and line breaks, but uses a
-    monochrome style. For full syntax highlighting, consider using WeasyPrint or
-    other HTML-to-PDF libraries in the future.
+    a {{
+        color: {colors['accent']};
+        text-decoration: none;
+    }}
+    
+    a:hover {{
+        text-decoration: underline;
+    }}
+    
+    code {{
+        font-family: 'DejaVu Sans Mono', 'Courier New', monospace;
+        font-size: {int(font_size * 0.9)}pt;
+        background-color: {colors['code_bg']};
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
+    }}
+    
+    pre {{
+        font-family: 'DejaVu Sans Mono', 'Courier New', monospace;
+        font-size: {int(font_size * 0.85)}pt;
+        background-color: {colors['code_bg']};
+        padding: 0.8em;
+        border: 1px solid {colors['border']};
+        border-radius: 4px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0.8em 0;
+        page-break-inside: avoid;
+    }}
+    
+    pre code {{
+        background-color: transparent;
+        padding: 0;
+        border-radius: 0;
+    }}
+    
+    blockquote {{
+        border-left: 4px solid {colors['accent']};
+        margin: 0.8em 0;
+        padding: 0.5em 1em;
+        background-color: {colors['light_bg']};
+        color: {colors['secondary']};
+        font-style: italic;
+    }}
+    
+    blockquote p {{
+        margin: 0;
+    }}
+    
+    ul, ol {{
+        margin: 0.5em 0;
+        padding-left: 1.5em;
+    }}
+    
+    li {{
+        margin: 0.2em 0;
+    }}
+    
+    table {{
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.8em 0;
+        page-break-inside: avoid;
+    }}
+    
+    th, td {{
+        border: 1px solid {colors['border']};
+        padding: 0.5em 0.8em;
+        text-align: left;
+    }}
+    
+    th {{
+        background-color: {colors['light_bg']};
+        font-weight: bold;
+        color: {colors['primary']};
+    }}
+    
+    tr:nth-child(even) {{
+        background-color: {colors['light_bg']};
+    }}
+    
+    img {{
+        max-width: 100%;
+        height: auto;
+    }}
+    
+    hr {{
+        border: none;
+        border-top: 1px solid {colors['border']};
+        margin: 1em 0;
+    }}
+    
+    /* Syntax highlighting colors */
+    .highlight .hll {{ background-color: {colors['code_bg']} }}
+    .highlight .c {{ color: #60a0b0; font-style: italic }}
+    .highlight .err {{ color: #a00000 }}
+    .highlight .k {{ color: #007020; font-weight: bold }}
+    .highlight .o {{ color: #666666 }}
+    .highlight .cm {{ color: #60a0b0; font-style: italic }}
+    .highlight .cp {{ color: #007020 }}
+    .highlight .c1 {{ color: #60a0b0; font-style: italic }}
+    .highlight .cs {{ color: #60a0b0; background-color: #fff0f0 }}
+    .highlight .gd {{ color: #a00000 }}
+    .highlight .ge {{ font-style: italic }}
+    .highlight .gr {{ color: #ff0000 }}
+    .highlight .gh {{ color: #000080; font-weight: bold }}
+    .highlight .gi {{ color: #00a000 }}
+    .highlight .go {{ color: #888888 }}
+    .highlight .gp {{ color: #c65d09; font-weight: bold }}
+    .highlight .gs {{ font-weight: bold }}
+    .highlight .gu {{ color: #800080; font-weight: bold }}
+    .highlight .gt {{ color: #0044dd }}
+    .highlight .kc {{ color: #007020; font-weight: bold }}
+    .highlight .kd {{ color: #007020; font-weight: bold }}
+    .highlight .kn {{ color: #007020; font-weight: bold }}
+    .highlight .kp {{ color: #007020 }}
+    .highlight .kr {{ color: #007020; font-weight: bold }}
+    .highlight .kt {{ color: #902000 }}
+    .highlight .m {{ color: #40a070 }}
+    .highlight .s {{ color: #4070a0 }}
+    .highlight .na {{ color: #4070a0 }}
+    .highlight .nb {{ color: #007020 }}
+    .highlight .nc {{ color: #0e84b5; font-weight: bold }}
+    .highlight .no {{ color: #60add5 }}
+    .highlight .nd {{ color: #555555; font-weight: bold }}
+    .highlight .ni {{ color: #d55537; font-weight: bold }}
+    .highlight .ne {{ color: #007020; font-weight: bold }}
+    .highlight .nf {{ color: #06287e }}
+    .highlight .nl {{ color: #002070; font-weight: bold }}
+    .highlight .nn {{ color: #0e84b5; font-weight: bold }}
+    .highlight .nt {{ color: #062875; font-weight: bold }}
+    .highlight .nv {{ color: #bb60d5 }}
+    .highlight .ow {{ color: #007020; font-weight: bold }}
+    .highlight .w {{ color: #bbbbbb }}
+    .highlight .mf {{ color: #40a070 }}
+    .highlight .mh {{ color: #40a070 }}
+    .highlight .mi {{ color: #40a070 }}
+    .highlight .mo {{ color: #40a070 }}
+    .highlight .sb {{ color: #4070a0 }}
+    .highlight .sc {{ color: #4070a0 }}
+    .highlight .sd {{ color: #4070a0; font-style: italic }}
+    .highlight .s2 {{ color: #4070a0 }}
+    .highlight .se {{ color: #4070a0; font-weight: bold }}
+    .highlight .sh {{ color: #4070a0 }}
+    .highlight .si {{ color: #70a0d0; font-style: italic }}
+    .highlight .sx {{ color: #c65d09 }}
+    .highlight .sr {{ color: #235388 }}
+    .highlight .s1 {{ color: #4070a0 }}
+    .highlight .ss {{ color: #517918 }}
+    .highlight .bp {{ color: #007020 }}
+    .highlight .vc {{ color: #bb60d5 }}
+    .highlight .vg {{ color: #bb60d5 }}
+    .highlight .vi {{ color: #bb60d5 }}
+    .highlight .il {{ color: #40a070 }}
     """
-    # Escape XML special characters
-    safe_code = (code
-                 .replace('&', '&amp;')
-                 .replace('<', '&lt;')
-                 .replace('>', '&gt;')
-                 .replace('"', '&quot;'))
-
-    # Convert newlines to <br/> and preserve indentation
-    formatted = safe_code.replace('\n', '<br/>')
-    formatted = formatted.replace('  ', '&nbsp;&nbsp;')
-
-    # Wrap in monospace font
-    formatted = f'<font face="DejaVuSansMono">{formatted}</font>'
-
-    return formatted
-
-
-def parse_markdown_element(element, styles: dict, colors: dict) -> list:
-    """Parse a single markdown element and return reportlab flowables"""
-    flowables = []
-    tag = element.tag.split('}')[-1] if '}' in element.tag else element.tag
-    
-    if tag == 'h1':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading1']))
-    elif tag == 'h2':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading2']))
-    elif tag == 'h3':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading3']))
-    elif tag == 'h4':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading4']))
-    elif tag == 'h5':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading5']))
-    elif tag == 'h6':
-        text = element.text or ''
-        flowables.append(Paragraph(text, styles['heading6']))
-    elif tag == 'p':
-        # Handle inline formatting
-        text = process_inline_formatting(element, styles)
-        if text.strip():
-            flowables.append(Paragraph(text, styles['body']))
-    elif tag == 'pre':
-        code_elem = element.find('.//code') if element.find('.//code') is not None else element
-        code_text = code_elem.text or ''
-
-        if not code_text:
-            # Try to get text from child elements
-            code_text = ''.join(code_elem.itertext()) if code_elem is not None else ''
-
-        # Apply code formatting (monochrome due to Reportlab limitations)
-        highlighted_code = highlight_code(code_text)
-
-        # Create paragraph with formatted code
-        code_para = Paragraph(
-            highlighted_code,
-            styles['code']
-        )
-        flowables.append(code_para)
-    elif tag == 'code':
-        # Inline code
-        code_text = element.text or ''
-        code_text = code_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        flowables.append(Paragraph(f'<font face="DejaVuSansMono" size="10" color="{colors["text"]}">{code_text}</font>', styles['body']))
-    elif tag == 'blockquote':
-        text = process_inline_formatting(element, styles)
-        flowables.append(Paragraph(text, styles['blockquote']))
-    elif tag == 'ul':
-        items = []
-        for li in element.findall('.//li'):
-            li_text = process_inline_formatting(li, styles)
-            items.append(ListItem(Paragraph(li_text, styles['body']), bulletColor=HexColor(colors['accent'])))
-        if items:
-            flowables.append(ListFlowable(items, bulletType='bullet', start='•'))
-    elif tag == 'ol':
-        items = []
-        for li in element.findall('.//li'):
-            li_text = process_inline_formatting(li, styles)
-            items.append(ListItem(Paragraph(li_text, styles['body'])))
-        if items:
-            flowables.append(ListFlowable(items, bulletType='1', start=1))
-    elif tag == 'hr':
-        flowables.append(Spacer(1, 5 * mm))
-    elif tag == 'a':
-        href = element.get('href', '')
-        text = element.text or href
-        link_text = f'<link href="{href}" color="{colors["accent"]}">{text}</link>'
-        flowables.append(Paragraph(link_text, styles['body']))
-    elif tag == 'img':
-        # For images, we just add a placeholder text
-        alt = element.get('alt', 'Image')
-        src = element.get('src', '')
-        flowables.append(Paragraph(f'[Image: {alt}] ({src})', styles['body']))
-    elif tag == 'table':
-        # Simplified table handling - just render as text
-        rows = []
-        for tr in element.findall('.//tr'):
-            cells = []
-            for td in tr.findall('.//td') + tr.findall('.//th'):
-                cells.append(td.text or '')
-            rows.append(' | '.join(cells))
-        if rows:
-            table_text = '<br/>'.join(rows)
-            flowables.append(Paragraph(table_text, styles['code']))
-    else:
-        # Handle other elements recursively
-        if element.text and element.text.strip():
-            flowables.append(Paragraph(element.text, styles['body']))
-        for child in element:
-            flowables.extend(parse_markdown_element(child, styles, colors))
-        if element.tail and element.tail.strip():
-            flowables.append(Paragraph(element.tail, styles['body']))
-    
-    return flowables
-
-
-def process_inline_formatting(element, styles: dict) -> str:
-    """Process inline formatting like bold, italic, code, links"""
-    result = element.text or ''
-    
-    for child in element:
-        child_tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-        
-        if child_tag == 'strong' or child_tag == 'b':
-            result += f'<b>{child.text or ""}</b>'
-        elif child_tag == 'em' or child_tag == 'i':
-            result += f'<i>{child.text or ""}</i>'
-        elif child_tag == 'code':
-            code_text = child.text or ''
-            code_text = code_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            result += f'<font face="DejaVuSansMono" size="10">{code_text}</font>'
-        elif child_tag == 'a':
-            href = child.get('href', '')
-            text = child.text or href
-            result += f'<link href="{href}">{text}</link>'
-        else:
-            result += child.text or ''
-        
-        result += child.tail or ''
-    
-    return result
-
-
-def markdown_to_flowables(md_content: str, styles: dict, colors: dict) -> list:
-    """Convert markdown content to reportlab flowables"""
-    # Configure markdown extension
-    md = markdown.Markdown(extensions=[
-        'fenced_code',
-        'codehilite',
-        'tables',
-        'toc',
-        'nl2br',
-    ])
-    
-    # Convert markdown to HTML
-    html_content = md.convert(md_content)
-    
-    # Parse HTML
-    try:
-        root = ElementTree.fromstring(f'<root>{html_content}</root>')
-    except ElementTree.ParseError:
-        # Fallback: treat as plain text
-        return [Paragraph(md_content.replace('\n', '<br/>'), styles['body'])]
-    
-    flowables = []
-    for element in root:
-        flowables.extend(parse_markdown_element(element, styles, colors))
-    
-    return flowables
-
-
-def add_page_decorations(canvas, doc, colors: dict):
-    """Add page header and footer decorations"""
-    canvas.saveState()
-    
-    page_width, page_height = A4
-    
-    # Header line
-    canvas.setStrokeColor(HexColor(colors['border']))
-    canvas.setLineWidth(0.5)
-    canvas.line(20 * mm, page_height - 15 * mm, page_width - 20 * mm, page_height - 15 * mm)
-    
-    # Footer line
-    canvas.line(20 * mm, 15 * mm, page_width - 20 * mm, 15 * mm)
-    
-    # Page number
-    canvas.setFont('DejaVuSans' if register_fonts() else 'Helvetica', 9)
-    canvas.setFillColor(HexColor(colors['secondary']))
-    page_num = canvas.getPageNumber()
-    canvas.drawCentredString(page_width / 2, 8 * mm, f"— {page_num} —")
-    
-    canvas.restoreState()
 
 
 async def main(params: Inputs, context: Context) -> Outputs:
-    """Main function to convert markdown to PDF"""
-    md_content = params.get("md_content", "")
+    """
+    Convert Markdown content to PDF using WeasyPrint.
+    """
+    md_content = params.get("md_content")
     if not md_content:
         raise ValueError("md_content is required")
-    
-    title = params.get("title", "")
+
+    # Get parameters
+    title = params.get("title") or "Document"
     font_size = params.get("font_size", 11)
     color_scheme = params.get("color_scheme", "elegant_blue")
-    output_path = params.get("output_path") or context.session_dir
+
+    # Determine output path
+    output_path = params.get("output_path")
+    if not output_path:
+        output_path = os.path.join(context.session_dir, "output.pdf")
     
-    # Ensure output path ends with .pdf
-    if not output_path.endswith('.pdf'):
-        output_path = os.path.join(output_path, "output.pdf")
-    
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else '.', exist_ok=True)
-    
-    # Get color scheme
-    colors = COLOR_SCHEMES.get(color_scheme, COLOR_SCHEMES["elegant_blue"])
-    
-    # Create styles
-    styles = create_styles(color_scheme, font_size)
-    
-    # Create PDF document
-    doc = SimpleDocTemplate(
-        output_path,
-        pagesize=A4,
-        rightMargin=20 * mm,
-        leftMargin=20 * mm,
-        topMargin=25 * mm,
-        bottomMargin=25 * mm,
+    # Ensure output directory exists
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    # Get font path
+    font_path = get_font_path()
+
+    # Generate CSS
+    css_content = generate_css(color_scheme, font_size, font_path)
+
+    # Convert Markdown to HTML with syntax highlighting
+    md_converter = markdown.Markdown(
+        extensions=[
+            "fenced_code",
+            "codehilite",
+            "tables",
+            "toc",
+            "attr_list",
+            "def_list",
+            "abbr",
+            "footnotes",
+            "admonition",
+        ],
+        extension_configs={
+            "codehilite": {
+                "css_class": "highlight",
+                "linenums": False,
+                "guess_lang": True,
+            }
+        }
     )
+    html_body = md_converter.convert(md_content)
+
+    # Build complete HTML document
+    html_content = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <style>
+    {css_content}
+    </style>
+</head>
+<body data-title="{title}">
+    <h1>{title}</h1>
+    {html_body}
+</body>
+</html>"""
+
+    # Convert HTML to PDF using WeasyPrint
+    from weasyprint import HTML, CSS
     
-    # Build flowables
-    story = []
-    
-    # Add title if provided
-    if title:
-        story.append(Paragraph(title, styles['title']))
-        story.append(Spacer(1, 10 * mm))
-    
-    # Convert markdown to flowables
-    flowables = markdown_to_flowables(md_content, styles, colors)
-    story.extend(flowables)
-    
-    # Build PDF with decorations
-    doc.build(
-        story,
-        onFirstPage=lambda c, d: add_page_decorations(c, d, colors),
-        onLaterPages=lambda c, d: add_page_decorations(c, d, colors),
-    )
-    
+    html = HTML(string=html_content, base_url="/")
+    css = CSS(string=css_content)
+    html.write_pdf(output_path, stylesheets=[css])
+
     return {"pdf_path": output_path}

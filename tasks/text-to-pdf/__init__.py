@@ -1,168 +1,188 @@
 #region generated meta
 import typing
 class Inputs(typing.TypedDict):
-    text: str
+    text_content: str
     title: str | None
     font_size: typing.Literal[10, 11, 12, 14, 16]
-    color_scheme: typing.Literal["elegant-blue", "warm-earth", "modern-dark", "classic-serif", "minimal-gray"]
     output_path: str | None
 class Outputs(typing.TypedDict):
     pdf_path: typing.NotRequired[str]
 #endregion
 
 from oocana import Context
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.colors import HexColor, Color
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-from reportlab.lib.units import mm, cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 import os
 import re
 
 # Color schemes with design-focused palettes
 COLOR_SCHEMES = {
     "elegant-blue": {
-        "primary": "#1E3A5F",        # Deep navy blue
-        "secondary": "#4A90A4",     # Steel blue
-        "accent": "#E8F4F8",        # Light blue background
-        "text": "#2C3E50",          # Dark slate
-        "title": "#1E3A5F",         # Same as primary
+        "primary": "#1E3A5F",
+        "secondary": "#4A90A4",
+        "accent": "#E8F4F8",
+        "text": "#2C3E50",
+        "title": "#1E3A5F",
         "background": "#FFFFFF",
         "header_bg": "#E8F4F8",
     },
     "warm-earth": {
-        "primary": "#8B4513",       # Saddle brown
-        "secondary": "#D2691E",     # Chocolate
-        "accent": "#FFF8DC",        # Cornsilk
-        "text": "#3E2723",          # Dark brown
-        "title": "#5D4037",         # Brown
-        "background": "#FFFAF0",    # Floral white
+        "primary": "#8B4513",
+        "secondary": "#D2691E",
+        "accent": "#FFF8DC",
+        "text": "#3E2723",
+        "title": "#5D4037",
+        "background": "#FFFAF0",
         "header_bg": "#FFF8DC",
     },
     "modern-dark": {
-        "primary": "#00BCD4",       # Cyan accent
-        "secondary": "#78909C",     # Blue grey
-        "accent": "#263238",        # Dark slate
-        "text": "#ECEFF1",          # Light grey
-        "title": "#00BCD4",         # Cyan
-        "background": "#1A1A2E",    # Dark navy
+        "primary": "#00BCD4",
+        "secondary": "#78909C",
+        "accent": "#263238",
+        "text": "#ECEFF1",
+        "title": "#00BCD4",
+        "background": "#1A1A2E",
         "header_bg": "#16213E",
     },
     "classic-serif": {
-        "primary": "#2C3E50",       # Dark blue grey
-        "secondary": "#7F8C8D",     # Grey
-        "accent": "#F5F5F5",        # White smoke
-        "text": "#333333",          # Dark grey
-        "title": "#2C3E50",         # Dark blue grey
+        "primary": "#2C3E50",
+        "secondary": "#7F8C8D",
+        "accent": "#F5F5F5",
+        "text": "#333333",
+        "title": "#2C3E50",
         "background": "#FFFFFF",
         "header_bg": "#F5F5F5",
     },
     "minimal-gray": {
-        "primary": "#212121",       # Almost black
-        "secondary": "#757575",     # Medium grey
-        "accent": "#FAFAFA",        # Almost white
-        "text": "#424242",          # Dark grey
-        "title": "#212121",         # Almost black
+        "primary": "#212121",
+        "secondary": "#757575",
+        "accent": "#FAFAFA",
+        "text": "#424242",
+        "title": "#212121",
         "background": "#FFFFFF",
         "header_bg": "#F5F5F5",
     },
 }
 
 
-def register_fonts():
-    """Register fonts for PDF generation."""
-    try:
-        # Try to register common fonts
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        ]
-        
-        for path in font_paths:
-            if os.path.exists(path):
-                font_name = os.path.basename(path).replace(".ttf", "")
-                pdfmetrics.registerFont(TTFont(font_name, path))
-        
-        return True
-    except Exception:
-        return False
+def get_font_path() -> str:
+    """Get the best available Chinese font path."""
+    # Prefer OTF font (WeasyPrint supports OTF natively)
+    otf_path = "/usr/share/fonts/SourceHanSans/SourceHanSansSC-Normal.otf"
+    ttf_path = "/usr/share/fonts/NotoSansSC/NotoSansSC-Regular.ttf"
+    
+    if os.path.exists(otf_path):
+        return otf_path
+    elif os.path.exists(ttf_path):
+        return ttf_path
+    else:
+        raise FileNotFoundError("No Chinese font found")
 
 
-def create_styles(color_scheme: str, font_size: int) -> dict:
-    """Create custom paragraph styles based on color scheme."""
+def generate_css(color_scheme: str, font_size: int, font_path: str) -> str:
+    """Generate CSS styles based on color scheme."""
     colors = COLOR_SCHEMES.get(color_scheme, COLOR_SCHEMES["elegant-blue"])
     
-    styles = getSampleStyleSheet()
-    custom_styles = {}
+    return f"""
+    @font-face {{
+        font-family: 'SourceHanSans';
+        src: url('{font_path}');
+        font-weight: normal;
+        font-style: normal;
+    }}
     
-    # Title style
-    custom_styles["title"] = ParagraphStyle(
-        "CustomTitle",
-        parent=styles["Title"],
-        fontSize=font_size + 8,
-        textColor=HexColor(colors["title"]),
-        spaceAfter=20 * mm,
-        spaceBefore=10 * mm,
-        alignment=TA_CENTER,
-        fontName="Helvetica-Bold",
-    )
+    @page {{
+        margin: 2cm;
+        size: A4;
+        @top-center {{
+            content: attr(data-title);
+            font-size: 9pt;
+            color: {colors['secondary']};
+        }}
+        @bottom-center {{
+            content: counter(page);
+            font-size: 9pt;
+            color: {colors['secondary']};
+        }}
+    }}
     
-    # Heading style
-    custom_styles["heading"] = ParagraphStyle(
-        "CustomHeading",
-        parent=styles["Heading1"],
-        fontSize=font_size + 4,
-        textColor=HexColor(colors["primary"]),
-        spaceAfter=10 * mm,
-        spaceBefore=15 * mm,
-        fontName="Helvetica-Bold",
-    )
+    * {{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }}
     
-    # Body text style
-    custom_styles["body"] = ParagraphStyle(
-        "CustomBody",
-        parent=styles["Normal"],
-        fontSize=font_size,
-        textColor=HexColor(colors["text"]),
-        spaceAfter=6 * mm,
-        spaceBefore=3 * mm,
-        alignment=TA_JUSTIFY,
-        leading=font_size * 1.5,
-        fontName="Helvetica",
-    )
+    body {{
+        font-family: 'SourceHanSans', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif;
+        font-size: {font_size}pt;
+        line-height: 1.8;
+        color: {colors['text']};
+        background-color: {colors['background']};
+    }}
     
-    # Quote style
-    custom_styles["quote"] = ParagraphStyle(
-        "CustomQuote",
-        parent=styles["Normal"],
-        fontSize=font_size - 1,
-        textColor=HexColor(colors["secondary"]),
-        spaceAfter=8 * mm,
-        spaceBefore=8 * mm,
-        leftIndent=15 * mm,
-        rightIndent=15 * mm,
-        fontName="Helvetica-Oblique",
-    )
+    .document-title {{
+        font-size: {font_size + 8}pt;
+        color: {colors['title']};
+        text-align: center;
+        margin-bottom: 1.5em;
+        padding-bottom: 0.5em;
+        border-bottom: 2px solid {colors['primary']};
+    }}
     
-    # Caption style
-    custom_styles["caption"] = ParagraphStyle(
-        "CustomCaption",
-        parent=styles["Normal"],
-        fontSize=font_size - 2,
-        textColor=HexColor(colors["secondary"]),
-        spaceAfter=5 * mm,
-        alignment=TA_CENTER,
-        fontName="Helvetica-Oblique",
-    )
+    .heading {{
+        font-size: {font_size + 4}pt;
+        color: {colors['primary']};
+        margin-top: 1.2em;
+        margin-bottom: 0.6em;
+        padding-bottom: 0.2em;
+        border-bottom: 1px solid {colors['header_bg']};
+        page-break-after: avoid;
+    }}
     
-    return custom_styles
+    .subheading {{
+        font-size: {font_size + 2}pt;
+        color: {colors['secondary']};
+        margin-top: 1em;
+        margin-bottom: 0.4em;
+        page-break-after: avoid;
+    }}
+    
+    .paragraph {{
+        margin: 0.6em 0;
+        text-align: justify;
+    }}
+    
+    .quote {{
+        border-left: 4px solid {colors['primary']};
+        margin: 1em 0;
+        padding: 0.5em 1em;
+        background-color: {colors['accent']};
+        color: {colors['secondary']};
+        font-style: italic;
+    }}
+    
+    .bullet-item {{
+        margin: 0.3em 0;
+        padding-left: 1.5em;
+        position: relative;
+    }}
+    
+    .bullet-item::before {{
+        content: "•";
+        position: absolute;
+        left: 0.5em;
+        color: {colors['primary']};
+    }}
+    
+    .caption {{
+        font-size: {font_size - 1}pt;
+        color: {colors['secondary']};
+        text-align: center;
+        margin: 0.5em 0;
+    }}
+    """
 
 
 def parse_text_structure(text: str) -> list:
-    """Parse text into structured elements (title, headings, paragraphs, quotes)."""
+    """Parse text into structured elements."""
     elements = []
     lines = text.strip().split("\n")
     
@@ -171,7 +191,7 @@ def parse_text_structure(text: str) -> list:
         if not line:
             continue
         
-        # Detect headings (lines starting with # or ALL CAPS)
+        # Detect headings
         if line.startswith("# "):
             elements.append(("heading", line[2:]))
         elif line.startswith("## "):
@@ -181,7 +201,6 @@ def parse_text_structure(text: str) -> list:
         elif line.startswith("- ") or line.startswith("* "):
             elements.append(("bullet", line[2:]))
         elif re.match(r"^[A-Z][A-Z\s]+:$", line):
-            # ALL CAPS heading with colon
             elements.append(("heading", line.rstrip(":")))
         else:
             elements.append(("paragraph", line))
@@ -189,116 +208,80 @@ def parse_text_structure(text: str) -> list:
     return elements
 
 
-def build_pdf_content(elements: list, styles: dict, title: str = None) -> list:
-    """Build PDF content from parsed elements."""
-    story = []
+def build_html(elements: list, title: str, color_scheme: str, font_size: int, font_path: str) -> str:
+    """Build HTML document from parsed elements."""
+    css = generate_css(color_scheme, font_size, font_path)
     
-    # Add title if provided
+    body_parts = []
+    
+    # Add title
     if title:
-        story.append(Paragraph(title, styles["title"]))
-        story.append(Spacer(1, 10 * mm))
+        body_parts.append(f'<div class="document-title">{title}</div>')
     
-    for element_type, content in elements:
-        if element_type == "heading":
-            story.append(Paragraph(content, styles["heading"]))
-        elif element_type == "subheading":
-            # Use slightly smaller heading
-            story.append(Paragraph(content, styles["heading"]))
-        elif element_type == "quote":
-            story.append(Paragraph(f'"{content}"', styles["quote"]))
-        elif element_type == "bullet":
-            story.append(Paragraph(f"• {content}", styles["body"]))
+    for elem_type, content in elements:
+        if elem_type == "heading":
+            body_parts.append(f'<div class="heading">{content}</div>')
+        elif elem_type == "subheading":
+            body_parts.append(f'<div class="subheading">{content}</div>')
+        elif elem_type == "quote":
+            body_parts.append(f'<div class="quote">{content}</div>')
+        elif elem_type == "bullet":
+            body_parts.append(f'<div class="bullet-item">{content}</div>')
         else:
-            story.append(Paragraph(content, styles["body"]))
+            body_parts.append(f'<div class="paragraph">{content}</div>')
     
-    return story
-
-
-def add_page_decorations(canvas, doc, colors: dict):
-    """Add decorative elements to each page."""
-    canvas.saveState()
-    
-    # Add subtle header line
-    canvas.setStrokeColor(HexColor(colors["primary"]))
-    canvas.setLineWidth(0.5)
-    canvas.line(
-        20 * mm, 
-        A4[1] - 15 * mm, 
-        A4[0] - 20 * mm, 
-        A4[1] - 15 * mm
-    )
-    
-    # Add subtle footer line
-    canvas.line(
-        20 * mm, 
-        15 * mm, 
-        A4[0] - 20 * mm, 
-        15 * mm
-    )
-    
-    # Add page number
-    canvas.setFont("Helvetica", 9)
-    canvas.setFillColor(HexColor(colors["secondary"]))
-    page_num = canvas.getPageNumber()
-    canvas.drawCentredString(
-        A4[0] / 2, 
-        10 * mm, 
-        f"— {page_num} —"
-    )
-    
-    canvas.restoreState()
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <style>
+    {css}
+    </style>
+</head>
+<body data-title="{title}">
+    {''.join(body_parts)}
+</body>
+</html>"""
 
 
 async def main(params: Inputs, context: Context) -> Outputs:
-    """Main function to convert text to PDF."""
-    text = params.get("text", "")
-    title = params.get("title", "")
+    """
+    Convert plain text to PDF using WeasyPrint.
+    """
+    text = params.get("text_content")
+    if not text:
+        raise ValueError("text is required")
+
+    # Get parameters
+    title = params.get("title") or "Document"
     font_size = params.get("font_size", 11)
     color_scheme = params.get("color_scheme", "elegant-blue")
-    output_path = params.get("output_path")
-    
-    if not text:
-        raise ValueError("Text content is required")
-    
+
     # Determine output path
+    output_path = params.get("output_path")
     if not output_path:
         output_path = os.path.join(context.session_dir, "output.pdf")
     
-    # Ensure directory exists
+    # Ensure output directory exists
     output_dir = os.path.dirname(output_path)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
-    
-    # Register fonts
-    register_fonts()
-    
-    # Get color scheme
-    colors = COLOR_SCHEMES.get(color_scheme, COLOR_SCHEMES["elegant-blue"])
-    
-    # Create styles
-    styles = create_styles(color_scheme, font_size)
-    
-    # Parse text structure
+
+    # Get font path
+    font_path = get_font_path()
+
+    # Parse text and build HTML
     elements = parse_text_structure(text)
+    html_content = build_html(elements, title, color_scheme, font_size, font_path)
+
+    # Convert HTML to PDF using WeasyPrint
+    from weasyprint import HTML, CSS
     
-    # Build PDF
-    doc = SimpleDocTemplate(
-        output_path,
-        pagesize=A4,
-        rightMargin=20 * mm,
-        leftMargin=20 * mm,
-        topMargin=25 * mm,
-        bottomMargin=25 * mm,
-    )
-    
-    # Build content
-    story = build_pdf_content(elements, styles, title if title else None)
-    
-    # Build PDF with page decorations
-    doc.build(
-        story,
-        onFirstPage=lambda c, d: add_page_decorations(c, d, colors),
-        onLaterPages=lambda c, d: add_page_decorations(c, d, colors),
-    )
-    
+    css = generate_css(color_scheme, font_size, font_path)
+    html = HTML(string=html_content, base_url="/")
+    stylesheet = CSS(string=css)
+    html.write_pdf(output_path, stylesheets=[stylesheet])
+
     return {"pdf_path": output_path}

@@ -1,0 +1,72 @@
+title: "%test-three-pdf-blocks%"
+description: "%test-md-to-pdf-text-to-pdf-and-html-to-pdf-blocks%"
+nodes:
+  # Test 1: Markdown to PDF
+  - node_id: md_to_pdf#1
+    task: self::md-to-pdf
+    title: "%markdown-test%"
+    inputs_from:
+      - handle: md_content
+        value: |
+          # Markdown 测试
+
+          这是 **Markdown** 格式的测试内容。
+
+          ## 功能特点
+
+          - 支持标题
+          - 支持 *斜体* 和 **粗体**
+          - 支持 `代码`
+
+          ### 代码示例
+
+          ```python
+          def hello():
+              print("Hello, World!")
+          ```
+      - handle: title
+        value: "Markdown Test"
+      - handle: font_size
+        value: 12
+      - handle: output_path
+        value:
+
+          # Test 2: Text to PDF
+  - node_id: text_to_pdf#1
+    task: self::text-to-pdf
+    title: "%text-test%"
+    inputs_from:
+      - handle: text_content
+        value: |
+          纯文本测试
+
+          这是一段纯文本内容，将被转换为 PDF。
+          支持多行文本和中文显示。
+
+          第二段落内容。
+      - handle: title
+        value: "Text Test"
+      - handle: font_size
+        value: 11
+      - handle: output_path
+        value:
+
+          # Test 3: HTML to PDF
+  - node_id: html_to_pdf#1
+    task: self::html-to-pdf
+    title: "%html-test%"
+    inputs_from:
+      - handle: html_content
+        value: |
+          <h1>HTML 测试</h1>
+          <p>这是 <strong>HTML</strong> 格式的测试内容。</p>
+          <ul>
+            <li>支持列表</li>
+            <li>支持中文</li>
+          </ul>
+      - handle: title
+        value: "HTML Test"
+      - handle: font_size
+        value: 14
+      - handle: output_path
+        value:

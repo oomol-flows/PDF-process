@@ -1,20 +1,20 @@
 inputs_def:
-  - handle: text
-    description: "%text-content-to-convert%"
+  - handle: text_content
+    description: Plain text content to convert
     json_schema:
       type: string
       ui:widget: textarea
     nullable: false
 
   - handle: title
-    description: "%document-title-optional%"
+    description: Document title
     json_schema:
       type: string
     value:
     nullable: true
 
   - handle: font_size
-    description: "%base-font-size%"
+    description: Base font size
     json_schema:
       type: number
       enum:
@@ -28,33 +28,13 @@ inputs_def:
           - 10pt (Small)
           - 11pt (Normal)
           - 12pt (Large)
-          - 14pt (Heading)
-          - 16pt (Title)
+          - 14pt (Extra Large)
+          - 16pt (Huge)
     value: 11
     nullable: false
 
-  - handle: color_scheme
-    description: "%color-scheme-for-document%"
-    json_schema:
-      type: string
-      enum:
-        - elegant-blue
-        - warm-earth
-        - modern-dark
-        - classic-serif
-        - minimal-gray
-      ui:options:
-        labels:
-          - Elegant Blue
-          - Warm Earth
-          - Modern Dark
-          - Classic Serif
-          - Minimal Gray
-    value: elegant-blue
-    nullable: false
-
   - handle: output_path
-    description: "%output-pdf-file-path-optional%"
+    description: Output PDF file path (optional, uses session dir if not set)
     json_schema:
       type: string
       ui:widget: save
@@ -71,7 +51,7 @@ outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "%generated-pdf-file-path%"
+    description: "Generated PDF file path"
     nullable: false
 
 executor:
@@ -79,6 +59,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "%text-to-pdf%"
+title: "Text to PDF"
 icon: ":carbon:document-pdf:"
-description: "%convert-text-to-beautifully-formatted-pdf%"
+description: "Convert plain text to PDF using WeasyPrint with OTF font support"

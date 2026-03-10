@@ -1,19 +1,40 @@
 inputs_def:
   - handle: html_content
+    description: HTML content to convert
     json_schema:
       type: string
       ui:widget: text
-    description: "%html-content-to-convert%"
     nullable: false
 
   - handle: title
+    description: Document title
     json_schema:
       type: string
-    description: "%document-title-optional%"
-    value: ""
+    value:
     nullable: true
 
+  - handle: font_size
+    description: Base font size
+    json_schema:
+      type: number
+      enum:
+        - 10
+        - 11
+        - 12
+        - 14
+        - 16
+      ui:options:
+        labels:
+          - 10pt (Small)
+          - 11pt (Normal)
+          - 12pt (Large)
+          - 14pt (Extra Large)
+          - 16pt (Huge)
+    value: 11
+    nullable: false
+
   - handle: output_path
+    description: Output PDF file path (optional, uses session dir if not set)
     json_schema:
       type: string
       ui:widget: save
@@ -23,7 +44,6 @@ inputs_def:
             extensions:
               - pdf
         excludeAll: true
-    description: "%output-pdf-file-path-optional%"
     value:
     nullable: true
 
@@ -31,7 +51,7 @@ outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "%generated-pdf-file-path%"
+    description: "Generated PDF file path"
     nullable: false
 
 executor:
@@ -39,6 +59,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "%html-to-pdf%"
+title: "HTML to PDF"
 icon: ":carbon:document-pdf:"
-description: "%convert-html-content-to-pdf-with-full-css-support%"
+description: "Convert HTML to PDF using WeasyPrint with OTF font support"

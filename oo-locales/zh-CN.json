@@ -154,7 +154,12 @@
   "test-flow-for-html-to-pdf-conversion": "HTML 转 PDF 转换的测试流程",
   "test-markdown-to-pdf": "测试 Markdown 转 PDF",
   "test-the-md-to-pdf-task-block": "测试 md-to-pdf 任务块",
-  "test-text-to-pdf": "测试文本转 PDF",
-  "test-the-text-to-pdf-task-block": "测试 text-to-pdf 任务模块",
-  "total-pages-in-merged-pdf": "合并 PDF 的总页数"
+  "total-pages-in-merged-pdf": "合并 PDF 的总页数",
+  "md-to-pdf2": "测试 md-to-pdf",
+  "test-three-pdf-blocks": "测试 三个 PDF 区块",
+  "test-md-to-pdf-text-to-pdf-and-html-to-pdf-blocks": "测试 md-to-pdf、text-to-pdf 和 html-to-pdf 模块",
+  "markdown-test": "Markdown 测试",
+  "text-test": "文本测试",
+  "html-test": "HTML 测试",
+  "html-to-pdf2": "测试 html-to-pdf"
 }
