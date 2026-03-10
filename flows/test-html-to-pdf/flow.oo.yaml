@@ -1,5 +1,5 @@
-title: "Test HTML to PDF"
-description: "Test flow for HTML to PDF conversion"
+title: "%test-html-to-pdf%"
+description: "%test-flow-for-html-to-pdf-conversion%"
 nodes:
   - node_id: html_to_pdf#1
     task: self::html-to-pdf

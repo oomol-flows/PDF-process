@@ -1,20 +1,20 @@
 inputs_def:
   - handle: text
-    description: Text content to convert to PDF
+    description: "%text-content-to-convert%"
     json_schema:
       type: string
       ui:widget: textarea
     nullable: false
 
   - handle: title
-    description: Document title (optional)
+    description: "%document-title-optional%"
     json_schema:
       type: string
     value:
     nullable: true
 
   - handle: font_size
-    description: Base font size
+    description: "%base-font-size%"
     json_schema:
       type: number
       enum:
@@ -34,7 +34,7 @@ inputs_def:
     nullable: false
 
   - handle: color_scheme
-    description: Color scheme for the document
+    description: "%color-scheme-for-document%"
     json_schema:
       type: string
       enum:
@@ -54,7 +54,7 @@ inputs_def:
     nullable: false
 
   - handle: output_path
-    description: Output PDF file path
+    description: "%output-pdf-file-path-optional%"
     json_schema:
       type: string
       ui:widget: save
@@ -71,7 +71,7 @@ outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "Generated PDF file path"
+    description: "%generated-pdf-file-path%"
     nullable: false
 
 executor:
@@ -79,7 +79,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "Text to PDF"
+title: "%text-to-pdf%"
 icon: ":carbon:document-pdf:"
-description: "Convert text to beautifully formatted PDF with elegant typography
-  and color schemes"
+description: "%convert-text-to-beautifully-formatted-pdf%"

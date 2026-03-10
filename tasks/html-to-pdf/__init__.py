@@ -5,7 +5,7 @@ class Inputs(typing.TypedDict):
     title: str | None
     output_path: str | None
 class Outputs(typing.TypedDict):
-    pdf_path: str
+    pdf_path: typing.NotRequired[str]
 #endregion
 
 from oocana import Context

@@ -3,13 +3,13 @@ inputs_def:
     json_schema:
       type: string
       ui:widget: text
-    description: "HTML content to convert"
+    description: "%html-content-to-convert%"
     nullable: false
 
   - handle: title
     json_schema:
       type: string
-    description: "Document title (optional)"
+    description: "%document-title-optional%"
     value: ""
     nullable: true
 
@@ -23,7 +23,7 @@ inputs_def:
             extensions:
               - pdf
         excludeAll: true
-    description: "Output PDF file path (optional, defaults to session directory)"
+    description: "%output-pdf-file-path-optional%"
     value:
     nullable: true
 
@@ -31,7 +31,7 @@ outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "Generated PDF file path"
+    description: "%generated-pdf-file-path%"
     nullable: false
 
 executor:
@@ -39,6 +39,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "HTML to PDF"
+title: "%html-to-pdf%"
 icon: ":carbon:document-pdf:"
-description: "Convert HTML content to PDF with full CSS support"
+description: "%convert-html-content-to-pdf-with-full-css-support%"

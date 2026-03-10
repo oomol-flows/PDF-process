@@ -3,13 +3,13 @@ inputs_def:
     json_schema:
       type: string
       ui:widget: text
-    description: "Markdown content to convert"
+    description: "%markdown-content-to-convert%"
     nullable: false
 
   - handle: title
     json_schema:
       type: string
-    description: "Document title (optional)"
+    description: "%document-title-optional%"
     value: ""
     nullable: true
 
@@ -30,7 +30,7 @@ inputs_def:
           - "14pt (Extra Large)"
           - "16pt (Huge)"
     value: 11
-    description: "Base font size"
+    description: "%base-font-size%"
     nullable: false
 
   - handle: color_scheme
@@ -50,7 +50,7 @@ inputs_def:
           - "Classic Serif"
           - "Minimal Gray"
     value: elegant_blue
-    description: "Color scheme for the document"
+    description: "%color-scheme-for-document%"
     nullable: false
 
   - handle: output_path
@@ -65,13 +65,13 @@ inputs_def:
         excludeAll: true
     value:
     nullable: true
-    description: "Output PDF file path (optional, defaults to session directory)"
+    description: "%output-pdf-file-path-optional%"
 
 outputs_def:
   - handle: pdf_path
     json_schema:
       type: string
-    description: "Generated PDF file path"
+    description: "%generated-pdf-file-path%"
     nullable: false
 
 executor:
@@ -79,7 +79,6 @@ executor:
   options:
     entry: __init__.py
 
-title: "Markdown to PDF"
+title: "%md-to-pdf%"
 icon: ":carbon:document-pdf:"
-description: "Convert Markdown content to beautifully styled PDF document with
-  multiple color schemes and font sizes"
+description: "%convert-markdown-to-beautifully-styled-pdf%"
