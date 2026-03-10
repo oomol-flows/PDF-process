@@ -1,0 +1,44 @@
+inputs_def:
+  - handle: html_content
+    json_schema:
+      type: string
+      ui:widget: text
+    description: "HTML content to convert"
+    nullable: false
+
+  - handle: title
+    json_schema:
+      type: string
+    description: "Document title (optional)"
+    value: ""
+    nullable: true
+
+  - handle: output_path
+    json_schema:
+      type: string
+      ui:widget: save
+      ui:options:
+        filters:
+          - name: PDF
+            extensions:
+              - pdf
+        excludeAll: true
+    description: "Output PDF file path (optional, defaults to session directory)"
+    value:
+    nullable: true
+
+outputs_def:
+  - handle: pdf_path
+    json_schema:
+      type: string
+    description: "Generated PDF file path"
+    nullable: false
+
+executor:
+  name: python
+  options:
+    entry: __init__.py
+
+title: "HTML to PDF"
+icon: ":carbon:document-pdf:"
+description: "Convert HTML content to PDF with full CSS support"

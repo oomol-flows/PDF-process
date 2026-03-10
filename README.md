@@ -1,10 +1,17 @@
 # PDF Processing Toolkit
 
-A comprehensive collection of PDF processing blocks for the OOMOL platform, providing powerful tools for document manipulation, conversion, and enhancement.
+A complete PDF processing toolkit that helps you easily handle all kinds of PDF document tasks. Whether you need to merge multiple files, add watermarks, extract text, or convert formats, this toolkit provides simple and intuitive solutions.
 
-## 🚀 Overview
+## ✨ What Can This Toolkit Do?
 
-This toolkit transforms your OOMOL workspace into a complete PDF processing powerhouse. With 12 specialized blocks, you can handle everything from basic operations like merging and splitting to advanced features like watermarking, encryption, and text extraction.
+This toolkit turns your workspace into a PDF processing center. With 16 specialized tools, you can handle everything from basic operations like merging and splitting to advanced features like watermarking, encryption, and format conversion.
+
+**Main Benefits:**
+- 📄 **Document Organization** - Merge, split, and rearrange pages with ease
+- 🎨 **Content Enhancement** - Add watermarks, annotations, and professional styling
+- 🔒 **Security Protection** - Password protect and control document access
+- 🔄 **Format Conversion** - Convert between PDF, images, HTML, and more
+- 📊 **Information Extraction** - Pull text and metadata from documents
 
 ## 📦 Available Blocks
 

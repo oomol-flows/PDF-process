@@ -1,0 +1,85 @@
+inputs_def:
+  - handle: md_content
+    json_schema:
+      type: string
+      ui:widget: text
+    description: "Markdown content to convert"
+    nullable: false
+
+  - handle: title
+    json_schema:
+      type: string
+    description: "Document title (optional)"
+    value: ""
+    nullable: true
+
+  - handle: font_size
+    json_schema:
+      type: number
+      enum:
+        - 10
+        - 11
+        - 12
+        - 14
+        - 16
+      ui:options:
+        labels:
+          - "10pt (Small)"
+          - "11pt (Normal)"
+          - "12pt (Large)"
+          - "14pt (Extra Large)"
+          - "16pt (Huge)"
+    value: 11
+    description: "Base font size"
+    nullable: false
+
+  - handle: color_scheme
+    json_schema:
+      type: string
+      enum:
+        - elegant_blue
+        - warm_earth
+        - modern_dark
+        - classic_serif
+        - minimal_gray
+      ui:options:
+        labels:
+          - "Elegant Blue"
+          - "Warm Earth"
+          - "Modern Dark"
+          - "Classic Serif"
+          - "Minimal Gray"
+    value: elegant_blue
+    description: "Color scheme for the document"
+    nullable: false
+
+  - handle: output_path
+    json_schema:
+      type: string
+      ui:widget: save
+      ui:options:
+        filters:
+          - name: PDF
+            extensions:
+              - pdf
+        excludeAll: true
+    value:
+    nullable: true
+    description: "Output PDF file path (optional, defaults to session directory)"
+
+outputs_def:
+  - handle: pdf_path
+    json_schema:
+      type: string
+    description: "Generated PDF file path"
+    nullable: false
+
+executor:
+  name: python
+  options:
+    entry: __init__.py
+
+title: "Markdown to PDF"
+icon: ":carbon:document-pdf:"
+description: "Convert Markdown content to beautifully styled PDF document with
+  multiple color schemes and font sizes"

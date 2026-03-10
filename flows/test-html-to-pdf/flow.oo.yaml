@@ -1,0 +1,31 @@
+title: "Test HTML to PDF"
+description: "Test flow for HTML to PDF conversion"
+nodes:
+  - node_id: html_to_pdf#1
+    task: self::html-to-pdf
+    inputs_from:
+      - handle: html_content
+        value: |
+          <h1>Hello World</h1>
+          <p>This is a <strong>test</strong> HTML document.</p>
+          <ul>
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+          </ul>
+          <table>
+            <tr><th>Name</th><th>Value</th></tr>
+            <tr><td>Alice</td><td>100</td></tr>
+            <tr><td>Bob</td><td>200</td></tr>
+          </table>
+          <blockquote>
+            This is a quote block.
+          </blockquote>
+          <pre><code>function hello() {
+            console.log("Hello!");
+          }</code></pre>
+      - handle: title
+        value: "Test Document"
+      - handle: output_path
+        value:
+        nullable: true

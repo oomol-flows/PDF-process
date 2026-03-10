@@ -1,0 +1,35 @@
+title: "Test Text to PDF"
+description: "Test the text-to-pdf task block"
+nodes:
+  - node_id: text_to_pdf#1
+    task: self::text-to-pdf
+    inputs_from:
+      - handle: text
+        value: "# Welcome to OOMOL PDF Generator
+
+
+          This is a beautifully formatted PDF document with elegant
+          typography and carefully designed color schemes.
+
+
+          ## Features
+
+
+          • Multiple color schemes
+
+          • Clean typography
+
+          • Professional layout
+
+
+          > Good design is obvious. Great design is transparent."
+      - handle: title
+        value: "OOMOL PDF Demo"
+      - handle: font_size
+        value: 11
+      - handle: color_scheme
+        value: "elegant-blue"
+      - handle: output_path
+        value:
+        nullable: true
+        nullable: true
