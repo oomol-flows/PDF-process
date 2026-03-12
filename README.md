@@ -31,6 +31,8 @@ A complete PDF processing toolkit with 16 specialized tools. Handle everything f
 - **PDF Text Extract** - Pull text content from PDFs
 - **PDF Metadata** - Extract document information
 
+> **Note**: If your PDF contains only images and text extraction returns empty results, use the `pdf-craft-cloud` package instead. It converts image-based PDFs to Markdown format using cloud OCR services, preserving layout and formatting.
+
 ## Block Combination Suggestions
 
 **Document Preparation**: Text/HTML/Markdown to PDF → Merge → Watermark
